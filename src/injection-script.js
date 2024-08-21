@@ -1,25 +1,41 @@
-// // Save first logs
-// (function () {
-//   console.log('Getting early logs');
-//   const logs = [];
-//   const log = console.log;
-//   console.log = function () {
-//     logs.push(Array.from(arguments));
-//     log.apply(this, arguments);
-//   };
-//   var info = console.info;
-//   console.info = function () {
-//     logs.push(Array.from(arguments));
-//     info.apply(this, arguments);
-//   };
-//   window.postMessage(
-//     {
-//       source: 'console-logger',
-//       data: JSON.stringify(logs),
-//     },
-//     '*'
-//   );
-// })();
+// Create a log buffer
+window.__logBuffer = [];
+
+// Override console.log to buffer logs
+(function () {
+  const originalLog = console.log;
+  console.log = function (...args) {
+    window.__logBuffer.push({ type: 'log', args });
+    originalLog.apply(console, args);
+  };
+})();
+
+// Override window.onerror to buffer uncaught errors
+window.onerror = function (message, source, lineno, colno, error) {
+  window.__logBuffer.push({
+    type: 'error',
+    message,
+    source,
+    lineno,
+    colno,
+    error,
+  });
+};
+
+// Function to send buffered logs after injection
+function sendBufferedLogs() {
+  if (window.__logBuffer.length > 0) {
+    window.__logBuffer.forEach((log) => {
+      sendMessage(log.args, log.type);
+      // Send log to your server or handle it as needed
+      // e.g., sendLog(log)
+    });
+    // Clear the buffer
+    window.__logBuffer = [];
+  }
+}
+// Call this function after your main script loads
+sendBufferedLogs();
 
 (function () {
   const log = console.log;
@@ -34,8 +50,14 @@
   };
   var error = console.error;
   console.error = function () {
-    error.apply(this, arguments);
-    sendMessage(Array.from(arguments), 'error');
+    const formattedArgs = Array.from(arguments).map((arg) => {
+      if (arg instanceof Error) {
+        return `${arg.name}: ${arg.message}\n${arg.stack}`;
+      }
+      return arg;
+    });
+    error.apply(this, formattedArgs);
+    sendMessage(formattedArgs, 'error');
   };
   var warn = console.warn;
   console.warn = function () {
