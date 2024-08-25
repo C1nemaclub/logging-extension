@@ -10,17 +10,55 @@ window.__logBuffer = [];
   };
 })();
 
+// Fetch source code to get specific line content
+function fetchLineContent(source, lineno) {
+  return fetch(source)
+    .then((response) => response.text())
+    .then((text) => {
+      const lines = text.split('\n');
+      return lines[lineno - 1] || 'Line content not found';
+    })
+    .catch((error) => `Failed to fetch source: ${error.message}`);
+}
+
 // Override window.onerror to buffer uncaught errors
-window.onerror = function (message, source, lineno, colno, error) {
-  window.__logBuffer.push({
+window.onerror = async function (message, source, lineno, colno, error) {
+  const lineContent = await fetchLineContent(source, lineno);
+  const errorDetails = {
     type: 'error',
     message,
     source,
     lineno,
     colno,
-    error,
-  });
+    error: error ? `${error.name}: ${error.message}\n${error.stack}` : null,
+    lineContent, // Add the line content here
+  };
+  window.__logBuffer.push(errorDetails);
+  sendMessage(errorDetails, 'error-unhandled');
 };
+
+window.addEventListener('unhandledrejection', async function (event) {
+  const lineContent =
+    event.reason && event.reason.stack
+      ? await fetchLineContent(
+          event.reason.stack.split('\n')[1].split('(')[1].split(':')[0],
+          event.reason.stack.split(':')[1]
+        )
+      : 'Line content not available';
+  const errorDetails = {
+    type: 'error',
+    message: event.reason ? event.reason.message : 'Unhandled Rejection',
+    source: 'Promise',
+    lineno: null,
+    colno: null,
+    lineContent, // Add the line content here
+    error: event.reason
+      ? `${event.reason.name}: ${event.reason.message}\n${event.reason.stack}`
+      : null,
+  };
+  window.__logBuffer.push(errorDetails);
+  sendMessage(errorDetails, 'error-unhandled');
+});
 
 // Function to send buffered logs after injection
 function sendBufferedLogs() {
