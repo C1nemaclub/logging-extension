@@ -25,6 +25,7 @@
   font-weight: 400;
   border-bottom: 1px solid #e0e0e0;
   display: flex;
+  color: #000;
   align-items: center;
   .header__icons {
     display: flex;
@@ -74,6 +75,7 @@
     font-weight: 600;
   }
   .log__container {
+    color: #213547;
     margin-top: 0;
     .log__content {
       margin-bottom: 0 !important;
