@@ -193,3 +193,13 @@ async function createJsonLog({
 
   return logElement;
 }
+
+// Shortcut for toggling console
+document.addEventListener('keydown', (event) => {
+  if (event.code === 'KeyQ' && event.ctrlKey) {
+    logsContainer.classList.toggle('open');
+    chrome.storage.local.set({
+      isConsoleOpen: logsContainer.classList.contains('open'),
+    });
+  }
+});
