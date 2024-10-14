@@ -1,6 +1,6 @@
 export const logTypeColorMap = {
-  error: '#DC2828',
-  log: '#18181B',
-  warn: '#ffcc00',
-  info: '#17A2B8',
+  error: '#ffe6e6',
+  log: '',
+  warn: '#fffae6',
+  info: '#e6f2ff',
 };
